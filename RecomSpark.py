@@ -1,4 +1,4 @@
-# ✅ Manually create small mock datasets (products, customers, purchases)
+#  Manually create small mock datasets (products, customers, purchases)
 
 # Product data
 products = [
@@ -37,7 +37,7 @@ purchase_schema = StructType([
     StructField("price_paid", IntegerType(), True),
 ])
 
-# ✅ Create DataFrames
+#  Create DataFrames
 df_products = spark.createDataFrame(products, product_schema)
 df_purchases = spark.createDataFrame(purchases, purchase_schema)
 
@@ -45,15 +45,15 @@ logger.info("Sample data loaded into DataFrames.")
 
 
 # frequently bought together
-# ✅ Step 2.1: Group purchases by customer
+# Step 2.1: Group purchases by customer
 customer_products = df_purchases.groupBy("customer_id").agg(
     collect_set("product_id").alias("products_bought")
 )
 
-# ✅ Step 2.2: Generate product pairs (co-purchase)
+#  Step 2.2: Generate product pairs (co-purchase)
 product_pairs = customer_products.selectExpr("explode(products_bought) as prod1", "products_bought")
 
-# ✅ Step 2.3: Remove self-pairs and flatten
+#  Step 2.3: Remove self-pairs and flatten
 recommendations = product_pairs.withColumn("prod2", explode("products_bought")) \
                                .filter("prod1 != prod2") \
                                .groupBy("prod1", "prod2").count() \
@@ -65,17 +65,17 @@ recommendations.show()
 
 #product ranking
 
-# ✅ Compute product metrics: sales count & average selling price
+#  Compute product metrics: sales count & average selling price
 product_stats = df_purchases.groupBy("product_id").agg(
     count("customer_id").alias("total_sales"),
     sum("quantity").alias("units_sold"),
     avg("price_paid").alias("avg_selling_price")
 )
 
-# ✅ Join with product ratings
+#  Join with product ratings
 ranked_products = df_products.join(product_stats, "product_id")
 
-# ✅ Create a simple ranking formula (sales + rating)
+#  Create a simple ranking formula (sales + rating)
 ranked_products = ranked_products.withColumn(
     "rank_score",
     (col("total_sales") * 0.5) + (col("rating") * 10)
@@ -88,13 +88,13 @@ ranked_products.select("product_id", "title", "rank_score").show()
 
 # prime customer identification
 
-# ✅ Identify high-value customers
+#  Identify high-value customers
 customer_stats = df_purchases.groupBy("customer_id").agg(
     count("product_id").alias("total_purchases"),
     sum("price_paid").alias("total_spent")
 )
 
-# ✅ Filter: spend > 10,000 and more than 2 purchases
+#  Filter: spend > 10,000 and more than 2 purchases
 prime_customers = customer_stats.filter(
     (col("total_purchases") >= 2) & (col("total_spent") > 10000)
 )
